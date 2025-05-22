@@ -8,6 +8,7 @@ import { connectDB } from "./database/db.js";
 
 // load the env variable
 dotenv.config();
+
 // validate the env variables
 if (!process.env.MONGODB_URI) {
   console.error("MONGO_URI is not defined in environment variables");
@@ -28,6 +29,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(cookieParser());
+
+// routes import
+import userRouter from "./routes/user.routes.js";
+
+// routes
+app.use("/api/v1/users", userRouter);
 
 app.get("/", async (req, res, next) => {
   res.json({
