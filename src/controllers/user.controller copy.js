@@ -19,13 +19,19 @@ export const registerUser = asyncHandler(async (req, res) => {
   if (validationErrors.length > 0) {
     throw throwApiError(400, validationErrors.join(", "));
   }
-  // user already exsits or not
+
+  // Check if user already exists
   const existingUser = await User.findOne({
-    $or: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }],
+    $or: [
+      { username: username.toLowerCase().trim() },
+      { email: email.toLowerCase().trim() },
+    ],
   });
+
   if (existingUser) {
     throw throwApiError(409, "User with this email or username already exists");
   }
+
   // agr file wo sab hai toh usko handle karo first multer and then cloudinary
 
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
@@ -36,9 +42,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   // Upload to cloudinary
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = coverImageLocalPath
-    ? await uploadOnCloudinary(coverImageLocalPath)
-    : null;
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
   if (!avatar) {
     throw throwApiError(400, "Failed to upload avatar to Cloudinary");
   }
@@ -52,12 +56,24 @@ export const registerUser = asyncHandler(async (req, res) => {
       password,
       username,
       username: username.toLowerCase(),
-    });
-    const createdUser = user.toObject();
-    delete createdUser.password;
-    delete createdUser.refreshToken;
-    return sendResponse(res, 201, createdUser, "User Registered Successfully");
+    }).select("-password -refreshToken");
+    return sendResponse(res, 201, user, "User Registered Successfully");
   } catch (error) {
+    if (error.code === 11000) {
+      throw throwApiError(
+        409,
+        "User with this email or username already exists"
+      );
+    }
     throw throwApiError(500, "Something went wrong while creating the user");
   }
 });
+
+export const loginUser = asyncHandler(async () => {
+  return sendResponse(res, 201, createUser, "User Registred Successfully");
+});
+
+// Remove password and refresh token from response
+// const createdUser = await User.findById(user._id).select(
+//   "-password -refreshToken"
+// );

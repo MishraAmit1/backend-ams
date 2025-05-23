@@ -1,28 +1,36 @@
 import mongoose, { Schema } from "mongoose";
-
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
-      required: [true, "User name is Required"],
-      minlength: [3, "User Name must be greater than 3 charcter"],
+      required: [true, "Username is required"],
+      minlength: [3, "Username must be at least 3 characters"],
+      maxlength: [30, "Username cannot exceed 30 characters"],
       unique: true,
       lowercase: true,
       trim: true,
       index: true,
+      match: [
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores",
+      ],
     },
     email: {
       type: String,
-      required: [true, "Email name is Required"],
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
     },
-    fullName: {
+    fullname: {
       type: String,
-      required: [true, "Full name is Required"],
+      required: [true, "Full name is required"],
       trim: true,
-      index: true,
+      minlength: [2, "Full name must be at least 2 characters"],
+      maxlength: [50, "Full name cannot exceed 50 characters"],
     },
     avatar: {
       type: String,
@@ -34,15 +42,26 @@ const userSchema = new mongoose.Schema(
     watchHistory: [
       {
         type: Schema.Types.ObjectId,
-        refs: "Video",
+        ref: "Video",
       },
     ],
     password: {
       type: String,
       required: [true, "Password is Required"],
-      minlength: [3, "Password must be greater than 3 charcter"],
+      minlength: [6, "Password must be at least 6 characters"],
+      validate: {
+        validator: function (v) {
+          return /^[A-Za-z\d]{6,}$/.test(v);
+        },
+        message:
+          "Password must be at least 8 characters long and can only contain letters (uppercase or lowercase) or numbers. No special characters or emojis are allowed.",
+      },
     },
-    refersToken: {
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    refreshToken: {
       type: String,
     },
   },
@@ -50,11 +69,10 @@ const userSchema = new mongoose.Schema(
 );
 
 // when a user is created, we want to hash the password before saving it to the database then we use pre save hook
-
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   try {
-    const salt = await bcrypt.genSalt(8);
+    const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -63,31 +81,35 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+// Method to check if password is correct
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
+// Method to generate access token
 userSchema.methods.generateToken = async function () {
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
-      fullName: this.fullName,
+      username: this.username,
+      fullname: this.fullname,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiryIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "50m",
     }
   );
 };
-userSchema.methods.refershToken = async function () {
+// Method to generate refresh token
+userSchema.methods.generateRefreshToken = async function () {
   return jwt.sign(
     {
       _id: this._id,
     },
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiryIn: process.env.REFRESH_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
     }
   );
 };

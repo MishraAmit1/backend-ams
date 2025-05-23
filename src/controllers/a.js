@@ -1,0 +1,1 @@
+# MONGODB_URL="mongodb+srv://amsdeveloper:amsdeveloper@ams.ojwr3nm.mongodb.net/?retryWrites=true&w=majority&appName=ams"
