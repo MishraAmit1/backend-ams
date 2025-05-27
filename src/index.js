@@ -35,12 +35,10 @@ import userRouter from "./routes/user.routes.js";
 
 // routes
 app.use("/api/v1/users", userRouter);
-
 app.get("/", async (req, res, next) => {
   res.json({
     message: "Running",
   });
-  throw new Error("Nopeeee");
 });
 // 404 handler
 app.use((req, res) => {

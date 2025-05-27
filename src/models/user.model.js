@@ -87,7 +87,10 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 // Method to generate access token
-userSchema.methods.generateToken = async function () {
+userSchema.methods.generateToken = function () {
+  if (!process.env.ACCESS_TOKEN_SECRET) {
+    throw new Error("ACCESS_TOKEN_SECRET is not defined");
+  }
   return jwt.sign(
     {
       _id: this._id,
@@ -102,7 +105,10 @@ userSchema.methods.generateToken = async function () {
   );
 };
 // Method to generate refresh token
-userSchema.methods.generateRefreshToken = async function () {
+userSchema.methods.generateRefreshToken = function () {
+  if (!process.env.REFRESH_TOKEN_SECRET) {
+    throw new Error("REFRESH_TOKEN_SECRET is not defined");
+  }
   return jwt.sign(
     {
       _id: this._id,
