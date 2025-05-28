@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Email is required"],
       unique: true,
       lowercase: true,
+      index: true,
       trim: true,
       match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
     },
@@ -49,12 +50,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is Required"],
       minlength: [6, "Password must be at least 6 characters"],
+      minlength: [6, "Password must be at least 6 characters"],
       validate: {
         validator: function (v) {
           return /^[A-Za-z\d]{6,}$/.test(v);
         },
         message:
-          "Password must be at least 8 characters long and can only contain letters (uppercase or lowercase) or numbers. No special characters or emojis are allowed.",
+          "Password must be at least 6 characters long and contain only letters or numbers.",
       },
     },
     isActive: {
@@ -88,9 +90,6 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 
 // Method to generate access token
 userSchema.methods.generateToken = function () {
-  if (!process.env.ACCESS_TOKEN_SECRET) {
-    throw new Error("ACCESS_TOKEN_SECRET is not defined");
-  }
   return jwt.sign(
     {
       _id: this._id,
@@ -106,9 +105,6 @@ userSchema.methods.generateToken = function () {
 };
 // Method to generate refresh token
 userSchema.methods.generateRefreshToken = function () {
-  if (!process.env.REFRESH_TOKEN_SECRET) {
-    throw new Error("REFRESH_TOKEN_SECRET is not defined");
-  }
   return jwt.sign(
     {
       _id: this._id,

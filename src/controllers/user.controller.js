@@ -5,6 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { cookieOptions, generateTokens } from "../utils/generateTokens.js";
 import { validateUserInput } from "../validation/validateUserInput.js";
+import jwt from "jsonwebtoken";
 
 export const registerUser = asyncHandler(async (req, res) => {
   // Get data from body
@@ -37,12 +38,16 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   // Upload to cloudinary
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = coverImageLocalPath
-    ? await uploadOnCloudinary(coverImageLocalPath)
-    : null;
   if (!avatar) {
     throw throwApiError(400, "Failed to upload avatar to Cloudinary");
   }
+  const coverImage = coverImageLocalPath
+    ? await uploadOnCloudinary(coverImageLocalPath)
+    : null;
+  if (coverImageLocalPath && !coverImage?.url) {
+    throw throwApiError(400, "Failed to upload cover image to Cloudinary");
+  }
+
   // Create user
   try {
     const user = await User.create({
@@ -134,5 +139,42 @@ export const logOutUser = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error("Logout error:", error);
     throw throwApiError(500, "Something went wrong during logout");
+  }
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookie?.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) {
+    throw throwApiError(401, "Refresh token is required");
+  }
+  try {
+    const decodeToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const user = await User.findById(decodeToken?._id);
+    if (!user) {
+      throw throwApiError(401, "Invalid refresh token - User not found");
+    }
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw throwApiError(401, "Refresh token is invalid or expired");
+    }
+    const { accessToken, newRefreshToken } = await generateTokens(user._id);
+    return sendResponse(
+      res
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", newRefreshToken, cookieOptions),
+      200,
+      "Access token refreshed successfully"
+    );
+  } catch (error) {
+    console.error("Refresh token error:", error.message);
+    if (error.name === "JsonWebTokenError") {
+      throw throwApiError(401, "Invalid refresh token format");
+    } else if (error.name === "TokenExpiredError") {
+      throw throwApiError(401, "Refresh token expired");
+    }
+    throw throwApiError(401, "Invalid refresh token");
   }
 });

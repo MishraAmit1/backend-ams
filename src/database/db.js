@@ -7,6 +7,8 @@ const connectionOptions = {
   minPoolSize: 2,
   retryWrites: true,
   w: "majority",
+  maxIdleTimeMS: 10000, // Close idle connections after 10s
+  serverSelectionTimeoutMS: 5000,
 };
 export const connectDB = async (url) => {
   if (!url || typeof url !== "string") {
@@ -24,8 +26,8 @@ export const connectDB = async (url) => {
       retry -= 1;
       console.log(`Retrying to connect... ${retry} attempt left `);
       await new Promise((res) => setTimeout(res, 5000));
-      console.error("MongoDB connection ERROR: ", error);
       if (retry === 0) {
+        console.error("MongoDB connection ERROR: ", error);
         throw new Error("Max retry reached. Failed connect to Database");
       }
     }

@@ -10,13 +10,21 @@ import { connectDB } from "./database/db.js";
 dotenv.config();
 
 // validate the env variables
-if (!process.env.MONGODB_URI) {
-  console.error("MONGO_URI is not defined in environment variables");
-  process.exit(1);
-}
-if (!process.env.PORT) {
-  console.warn("PORT is not defined, defaulting to 5000");
-}
+const requiredEnvVars = [
+  "MONGODB_URI",
+  "PORT",
+  "ACCESS_TOKEN_SECRET",
+  "REFRESH_TOKEN_SECRET",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+];
+requiredEnvVars.forEach((varName) => {
+  if (!process.env[varName]) {
+    console.error(`Error: ${varName} is not defined in environment variables`);
+    process.exit(1);
+  }
+});
 
 // intiliaze the express app
 const app = express();
@@ -32,9 +40,11 @@ app.use(cookieParser());
 
 // routes import
 import userRouter from "./routes/user.routes.js";
+import userRoute from "./routes/r.js";
 
 // routes
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/user", userRoute);
 app.get("/", async (req, res, next) => {
   res.json({
     message: "Running",
