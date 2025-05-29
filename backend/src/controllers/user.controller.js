@@ -56,7 +56,6 @@ export const registerUser = asyncHandler(async (req, res) => {
       coverImage: coverImage?.url || "",
       email,
       password,
-      username,
       username: username.toLowerCase(),
     });
     const createdUser = user.toObject();
@@ -95,7 +94,6 @@ export const loginUser = asyncHandler(async (req, res) => {
     }
 
     const { accessToken, refreshToken } = await generateTokens(user._id);
-    console.log("Generated Tokens:", { accessToken, refreshToken });
     const login = user.toObject();
     delete login.password;
     delete login.refreshToken;
@@ -144,7 +142,7 @@ export const logOutUser = asyncHandler(async (req, res) => {
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
-    req.cookie?.refreshToken || req.body.refreshToken;
+    req.cookies?.refreshToken || req.body.refreshToken;
   if (!incomingRefreshToken) {
     throw throwApiError(401, "Refresh token is required");
   }
@@ -160,12 +158,15 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     if (incomingRefreshToken !== user.refreshToken) {
       throw throwApiError(401, "Refresh token is invalid or expired");
     }
-    const { accessToken, newRefreshToken } = await generateTokens(user._id);
+    const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
+      user._id
+    );
     return sendResponse(
       res
         .cookie("accessToken", accessToken, cookieOptions)
         .cookie("refreshToken", newRefreshToken, cookieOptions),
       200,
+      { accessToken, refreshToken: newRefreshToken },
       "Access token refreshed successfully"
     );
   } catch (error) {

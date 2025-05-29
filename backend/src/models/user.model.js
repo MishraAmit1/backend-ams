@@ -50,7 +50,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is Required"],
       minlength: [6, "Password must be at least 6 characters"],
-      minlength: [6, "Password must be at least 6 characters"],
       validate: {
         validator: function (v) {
           return /^[A-Za-z\d]{6,}$/.test(v);

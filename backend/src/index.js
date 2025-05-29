@@ -28,23 +28,21 @@ requiredEnvVars.forEach((varName) => {
 
 // intiliaze the express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // MIDDLEWARES start
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: "*" }));
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(helmet());
 app.use(cookieParser());
 
 // routes import
 import userRouter from "./routes/user.routes.js";
-import userRoute from "./routes/r.js";
 
 // routes
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/user", userRoute);
 app.get("/", async (req, res, next) => {
   res.json({
     message: "Running",
