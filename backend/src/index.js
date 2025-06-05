@@ -18,6 +18,10 @@ const requiredEnvVars = [
   "CLOUDINARY_CLOUD_NAME",
   "CLOUDINARY_API_KEY",
   "CLOUDINARY_API_SECRET",
+  "RECAPTCHA_SITE_KEY",
+  "RECAPTCHA_SECRET_KEY",
+  "EMAIL_USER",
+  "EMAIL_PASS",
 ];
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
@@ -26,10 +30,21 @@ requiredEnvVars.forEach((varName) => {
   }
 });
 
-// intiliaze the express app
+// initialize the express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Global rate limiter for all routes
+const globalRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 1000, // Max 1000 requests per IP in the window
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again after an hour.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 // MIDDLEWARES start
 app.use(compression());
 app.use(express.json());
@@ -40,14 +55,22 @@ app.use(cookieParser());
 
 // routes import
 import userRouter from "./routes/user.routes.js";
+import customerRouter from "./routes/customer.routes.js";
+import projectRouter from "./routes/project.routes.js";
+import rateLimit from "express-rate-limit";
 
 // routes
+app.use(globalRateLimiter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/customers", customerRouter);
+app.use("/api/v1/projects", projectRouter);
+
 app.get("/", async (req, res, next) => {
   res.json({
     message: "Running",
   });
 });
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({

@@ -17,7 +17,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
       "-password -refreshToken"
     );
     if (!user) {
-      throw throwApiError(401, "Invalid access token - User not found");
+      throw throwApiError(404, "Invalid access token - User not found");
     }
     if (!user.isActive) {
       throw throwApiError(403, "Account is deactivated");

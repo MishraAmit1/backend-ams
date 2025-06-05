@@ -35,17 +35,7 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      required: true,
     },
-    coverImage: {
-      type: String,
-    },
-    watchHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Video",
-      },
-    ],
     password: {
       type: String,
       required: [true, "Password is Required"],
@@ -64,6 +54,12 @@ const userSchema = new mongoose.Schema(
     },
     refreshToken: {
       type: String,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpires: {
+      type: Date,
     },
   },
   { timestamps: true }
